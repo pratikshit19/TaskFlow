@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, Plus, Key, ArrowRight, User, CheckCircle2, ChevronRight, Edit2, Trash2 } from "lucide-react";
+import { Users, Plus, Key, ArrowRight, User, CheckCircle2, ChevronRight, Edit2, Trash2, Zap } from "lucide-react";
 import useStore from "../store/useStore";
 import toast from "react-hot-toast";
 import API_BASE_URL from "../config";
