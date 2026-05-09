@@ -72,8 +72,17 @@ app.post("/signin", async (req, res) => {
   const { identifier, password } = req.body; // identifier can be username or email
 
   try {
+    const normalizedIdentifier = (identifier || "").trim();
+    if (!normalizedIdentifier || !password) {
+      return res.status(400).json({ message: "Identifier and password are required" });
+    }
+
+    const escapedIdentifier = normalizedIdentifier.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const user = await User.findOne({
-      $or: [{ username: identifier }, { email: identifier }]
+      $or: [
+        { username: normalizedIdentifier },
+        { email: { $regex: `^${escapedIdentifier}$`, $options: "i" } }
+      ]
     });
 
     if (!user) {
@@ -554,22 +563,52 @@ app.put("/change-password", authMiddleware, async (req, res) => {
 // NOTE: Redundant /user/profile route was merged below into /profile
 
 app.put("/profile", authMiddleware, async (req, res) => {
-  const { username } = req.body;
+  const { username, email } = req.body;
 
   try {
-    if (!username || username.trim() === "") {
-      return res.status(400).json({ message: "Username cannot be empty" });
+    const updateFields = {};
+
+    if (username !== undefined) {
+      const trimmedUsername = username.trim();
+      if (!trimmedUsername) {
+        return res.status(400).json({ message: "Username cannot be empty" });
+      }
+
+      // Check if username is taken
+      const existingUsername = await User.findOne({ username: trimmedUsername, _id: { $ne: req.userId } });
+      if (existingUsername) {
+        return res.status(400).json({ message: "Username is already taken" });
+      }
+
+      updateFields.username = trimmedUsername;
     }
 
-    // Check if username is taken
-    const existingUser = await User.findOne({ username, _id: { $ne: req.userId } });
-    if (existingUser) {
-      return res.status(400).json({ message: "Username is already taken" });
+    if (email !== undefined) {
+      const trimmedEmail = email.trim().toLowerCase();
+      if (!trimmedEmail) {
+        return res.status(400).json({ message: "Email cannot be empty" });
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmedEmail)) {
+        return res.status(400).json({ message: "Please enter a valid email address" });
+      }
+
+      const existingEmail = await User.findOne({ email: trimmedEmail, _id: { $ne: req.userId } });
+      if (existingEmail) {
+        return res.status(400).json({ message: "Email is already in use" });
+      }
+
+      updateFields.email = trimmedEmail;
+    }
+
+    if (Object.keys(updateFields).length === 0) {
+      return res.status(400).json({ message: "No profile fields provided" });
     }
 
     const updatedUser = await User.findByIdAndUpdate(
       req.userId,
-      { username },
+      updateFields,
       { new: true }
     );
 
@@ -580,6 +619,7 @@ app.put("/profile", authMiddleware, async (req, res) => {
     res.json({
       message: "Profile updated successfully",
       username: updatedUser.username,
+      email: updatedUser.email,
     });
   } catch (err) {
     console.error("PROFILE UPDATE ERROR:", err);

@@ -117,6 +117,13 @@ export default function Insights() {
     return { bestHour: formattedHour, bestDay };
   }, [todos]);
 
+  const activeTargets = useMemo(() => {
+    return [
+      { name: "Daily Productivity", percent: stats.completionRate },
+      { name: "Focus Progress", percent: Math.min(100, stats.streak * 20) },
+    ];
+  }, [stats]);
+
   /* ================= DOWNLOAD REPORT ================= */
   const handleDownloadReport = async (type) => {
     try {
@@ -175,7 +182,7 @@ export default function Insights() {
       )}
 
       {/* HERO METRIC */}
-      <div className="relative bg-(--card-bg) rounded-[2.5rem] p-8 mb-8 shadow-sm border border-(--border)/60 overflow-hidden group">
+      <div className="relative bg-(--card-bg) rounded-[2rem] p-8 mb-8 shadow-sm border border-(--border)/60 overflow-hidden group">
         <div className="absolute top-[-50px] right-[-50px] w-[250px] h-[250px] bg-linear-to-bl from-(--gradient-start)/20 to-(--gradient-end)/10 rounded-full blur-[60px] pointer-events-none"></div>
         
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
@@ -209,6 +216,72 @@ export default function Insights() {
                 </AreaChart>
              </ResponsiveContainer>
           </div>
+        </div>
+      </div>
+
+      {/* Migrated summary stats from Profile */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <div className="bg-(--card-bg) p-5 rounded-[2rem] border border-(--border)/60 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
+          <p className="text-xs font-medium opacity-60 mb-1 tracking-wider">STREAK</p>
+          <div className="flex items-center gap-2">
+            <h3 className="text-2xl font-black">{stats.streak}</h3>
+            <Flame size={18} className="text-orange-500 fill-orange-500/20" />
+          </div>
+        </div>
+
+        <div className="bg-(--card-bg) p-5 rounded-[2rem] border border-(--border)/60 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
+          <p className="text-xs font-medium opacity-60 mb-1 tracking-wider">COMPLETED</p>
+          <h3 className="text-2xl font-black">{stats.completedCount}</h3>
+        </div>
+
+        <div className="bg-(--card-bg) p-5 rounded-[2rem] border border-(--border)/60 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow col-span-2 lg:col-span-1">
+          <p className="text-xs font-medium opacity-60 mb-1 tracking-wider">FOCUS TIME</p>
+          <h3 className="text-2xl font-black">{stats.totalFocusTime}</h3>
+        </div>
+      </div>
+
+      {/* Weekly efficiency + active targets moved from Profile */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="bg-(--card-bg) p-8 rounded-[2.5rem] border border-(--border)/60 flex flex-col items-center justify-center shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-(--gradient-start) to-(--gradient-end)"></div>
+          <div className="relative w-40 h-40 flex items-center justify-center mb-4">
+            <svg className="w-full h-full transform -rotate-90 select-none" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="40" className="stroke-(--border) fill-transparent" strokeWidth="8" />
+              <circle
+                cx="50"
+                cy="50"
+                r="40"
+                className="stroke-(--gradient-start) fill-transparent transition-all duration-1000 ease-out"
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeDasharray="251.2"
+                strokeDashoffset={251.2 - (251.2 * stats.completionRate) / 100}
+              />
+            </svg>
+            <div className="absolute flex flex-col items-center justify-center">
+              <span className="text-4xl font-black">{stats.completionRate}%</span>
+              <span className="text-[10px] font-bold opacity-50 uppercase tracking-tighter">Efficiency</span>
+            </div>
+          </div>
+          <p className="text-sm font-bold opacity-70">Weekly Efficiency Rate</p>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <h3 className="text-xl font-black mb-1 px-2 uppercase tracking-widest text-sm opacity-50">Active Targets</h3>
+          {activeTargets.map((target) => (
+            <div key={target.name} className="bg-(--card-bg) p-6 rounded-3xl border border-(--border)/60 shadow-sm">
+              <div className="flex justify-between mb-3 items-end">
+                <span className="text-base font-bold">{target.name}</span>
+                <span className="text-sm font-black text-(--accent)">{target.percent}%</span>
+              </div>
+              <div className="w-full h-2.5 bg-(--border)/40 rounded-full overflow-hidden shadow-inner">
+                <div
+                  className="h-full bg-linear-to-r from-(--gradient-start) to-(--gradient-end) transition-all duration-1000 ease-out"
+                  style={{ width: `${target.percent}%` }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

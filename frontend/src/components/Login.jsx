@@ -70,7 +70,10 @@ export default function Login({ setIsAuthenticated, setIsLogin, setUserProfile, 
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
+          body: JSON.stringify({
+            ...form,
+            identifier: form.identifier.trim(),
+          }),
         }
       );
 

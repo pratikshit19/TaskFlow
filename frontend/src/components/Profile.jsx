@@ -1,18 +1,19 @@
-import { Edit, Flame, LogOut, Settings, Crown, Zap, Activity, Palette, ArrowRight, Check, FileSpreadsheet, Brain, Target, Sparkles, Users } from "lucide-react";
-import { useState, useMemo, useRef } from "react";
+import { Edit, LogOut, Settings, Crown, Activity, ArrowRight, Check, Brain, Target, Sparkles, Users, Mail, ShieldCheck, Monitor, Moon, Sun, UsersRound, BarChart3 } from "lucide-react";
+import { useState, useRef, useMemo } from "react";
 import toast from "react-hot-toast";
 import API_BASE_URL from "../config";
 import useStore from "../store/useStore";
-import PricingModal from "./PricingModal";
 
 export default function Profile({ onLogout, setCurrentPage }) {
-  const { userProfile, setUserProfile, updateProfile, getStats, isPro, setShowPricingModal } = useStore();
-  const stats = getStats();
+  const { userProfile, setUserProfile, updateProfile, fetchUserProfile, isPro, setShowPricingModal, teams, currentWorkspace, darkMode } = useStore();
   const token = localStorage.getItem("token") || sessionStorage.getItem("token");
   const fileInputRef = useRef(null);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ username: userProfile.username });
+  const [emailForm, setEmailForm] = useState({ email: userProfile.email || "" });
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [isSavingEmail, setIsSavingEmail] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleUpgrade = () => {
@@ -61,6 +62,7 @@ export default function Profile({ onLogout, setCurrentPage }) {
     setIsSaving(false);
 
     if (result.success) {
+      await fetchUserProfile();
       toast.success("Profile updated!");
       setIsEditing(false);
     } else {
@@ -73,12 +75,55 @@ export default function Profile({ onLogout, setCurrentPage }) {
     setIsEditing(false);
   };
 
-  const goals = useMemo(() => {
+  const handleSaveEmail = async () => {
+    const email = emailForm.email.trim();
+    if (!email) {
+      return toast.error("Email cannot be empty");
+    }
+
+    setIsSavingEmail(true);
+    const result = await updateProfile({ email });
+    setIsSavingEmail(false);
+
+    if (result.success) {
+      await fetchUserProfile();
+      toast.success("Email updated!");
+      setIsEditingEmail(false);
+      setEmailForm({ email: email.toLowerCase() });
+    } else {
+      toast.error(result.message || "Failed to update email");
+    }
+  };
+
+  const handleCancelEmailEdit = () => {
+    setEmailForm({ email: userProfile.email || "" });
+    setIsEditingEmail(false);
+  };
+
+  const workspaceLabel = useMemo(() => {
+    if (currentWorkspace === "personal") return "Personal Workspace";
+    return teams.find((team) => team._id === currentWorkspace)?.name || "Team Workspace";
+  }, [currentWorkspace, teams]);
+
+  const accountDetails = useMemo(() => {
     return [
-      { name: "Daily Productivity", percent: stats.completionRate },
-      { name: "Focus Progress", percent: Math.min(100, (stats.streak * 20)) },
+      {
+        label: "Plan",
+        value: isPro ? "Pro Member" : "Free Member",
+        icon: <ShieldCheck size={16} className={isPro ? "text-amber-500" : "text-emerald-500"} />
+      },
+      {
+        label: "Theme",
+        value: darkMode ? "Dark" : "Light",
+        icon: darkMode ? <Moon size={16} className="text-indigo-500" /> : <Sun size={16} className="text-yellow-500" />
+      },
+      {
+        label: "Current Workspace",
+        value: workspaceLabel,
+        icon: <Monitor size={16} className="text-purple-500" />
+      }
     ];
-  }, [stats]);
+  }, [isPro, darkMode, workspaceLabel]);
 
   const ProFeaturesCard = () => {
     if (isPro) return null;
@@ -252,68 +297,99 @@ export default function Profile({ onLogout, setCurrentPage }) {
 
       <ProFeaturesCard />
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8 relative z-10">
-        <div className="bg-(--card-bg) p-5 rounded-[2rem] border border-(--border)/60 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
-          <p className="text-xs font-medium opacity-60 mb-1 tracking-wider">STREAK</p>
-          <div className="flex items-center gap-2">
-            <h3 className="text-2xl font-black">{stats.streak}</h3>
-            <Flame size={18} className="text-orange-500 fill-orange-500/20" />
-          </div>
+      {/* Account details */}
+      <div className="bg-(--card-bg) rounded-3xl border border-(--border)/60 p-6 mb-6 shadow-sm">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-sm font-black uppercase tracking-[0.18em] opacity-50">Account Overview</h3>
+          <span className="text-[10px] font-black uppercase tracking-widest opacity-40">Profile</span>
         </div>
-
-        <div className="bg-(--card-bg) p-5 rounded-[2rem] border border-(--border)/60 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow">
-          <p className="text-xs font-medium opacity-60 mb-1 tracking-wider">COMPLETED</p>
-          <h3 className="text-2xl font-black">{stats.completedCount}</h3>
-        </div>
-
-        <div className="bg-(--card-bg) p-5 rounded-[2rem] border border-(--border)/60 flex flex-col justify-between shadow-sm hover:shadow-md transition-shadow col-span-2 lg:col-span-1">
-          <p className="text-xs font-medium opacity-60 mb-1 tracking-wider">FOCUS TIME</p>
-          <h3 className="text-2xl font-black">{stats.totalFocusTime}</h3>
-        </div>
-      </div>
-
-      {/* Performance Circle & Goals */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 relative z-10">
-        <div className="bg-(--card-bg) p-8 rounded-[2.5rem] border border-(--border)/60 flex flex-col items-center justify-center shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-(--gradient-start) to-(--gradient-end)"></div>
-          <div className="relative w-40 h-40 flex items-center justify-center mb-4">
-            <svg className="w-full h-full transform -rotate-90 select-none" viewBox="0 0 100 100">
-              <circle cx="50" cy="50" r="40" className="stroke-(--border) fill-transparent" strokeWidth="8" />
-              <circle
-                cx="50" cy="50" r="40"
-                className="stroke-(--gradient-start) fill-transparent transition-all duration-1000 ease-out"
-                strokeWidth="8"
-                strokeLinecap="round"
-                strokeDasharray="251.2"
-                strokeDashoffset={251.2 - (251.2 * stats.completionRate) / 100}
-              />
-            </svg>
-            <div className="absolute flex flex-col items-center justify-center">
-              <span className="text-4xl font-black">{stats.completionRate}%</span>
-              <span className="text-[10px] font-bold opacity-50 uppercase tracking-tighter">Efficiency</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="rounded-2xl border border-(--border)/50 bg-(--bg)/35 px-4 py-3">
+            <div className="flex items-center gap-2 mb-1">
+              <Mail size={16} className="text-sky-500" />
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-50">Email</p>
             </div>
-          </div>
-          <p className="text-sm font-bold opacity-70">Weekly Efficiency Rate</p>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          <h3 className="text-xl font-black mb-1 px-2 uppercase tracking-widest text-sm opacity-50">Active Targets</h3>
-          {goals.map((goal) => (
-            <div key={goal.name} className="bg-(--card-bg) p-6 rounded-3xl border border-(--border)/60 shadow-sm">
-              <div className="flex justify-between mb-3 items-end">
-                <span className="text-base font-bold">{goal.name}</span>
-                <span className="text-sm font-black text-(--accent)">{goal.percent}%</span>
-              </div>
-              <div className="w-full h-2.5 bg-(--border)/40 rounded-full overflow-hidden shadow-inner">
-                <div
-                  className="h-full bg-linear-to-r from-(--gradient-start) to-(--gradient-end) transition-all duration-1000 ease-out"
-                  style={{ width: `${goal.percent}%` }}
+            {isEditingEmail ? (
+              <div className="space-y-2">
+                <input
+                  type="email"
+                  value={emailForm.email}
+                  onChange={(e) => setEmailForm({ email: e.target.value })}
+                  placeholder="you@example.com"
+                  className="w-full text-sm font-medium bg-(--card-bg) border border-(--border)/60 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-(--accent)/30"
                 />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleSaveEmail}
+                    disabled={isSavingEmail}
+                    className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg bg-emerald-500/15 text-emerald-500 hover:bg-emerald-500/25 disabled:opacity-60"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={handleCancelEmailEdit}
+                    className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg bg-(--border)/40 hover:bg-(--border)/70"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
+            ) : (
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-bold truncate">
+                  {userProfile.email || "Not set"}
+                </p>
+                <button
+                  onClick={() => setIsEditingEmail(true)}
+                  className="text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-(--border)/40 hover:bg-(--border)/70"
+                >
+                  {userProfile.email ? "Edit" : "Set Email"}
+                </button>
+              </div>
+            )}
+          </div>
+
+          {accountDetails.map((item) => (
+            <div key={item.label} className="rounded-2xl border border-(--border)/50 bg-(--bg)/35 px-4 py-3">
+              <div className="flex items-center gap-2 mb-1">
+                {item.icon}
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-50">{item.label}</p>
+              </div>
+              <p className="text-sm font-bold truncate">{item.value}</p>
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Quick actions */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <button
+          onClick={() => setCurrentPage("teams")}
+          className="bg-(--card-bg) border border-(--border)/60 rounded-3xl p-5 text-left hover:bg-(--border)/40 transition-colors shadow-sm"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center">
+              <UsersRound size={18} />
+            </div>
+            <ArrowRight size={16} className="opacity-50" />
+          </div>
+          <p className="font-black">Manage Teams</p>
+          <p className="text-xs opacity-60 mt-1">{teams.length} workspace{teams.length === 1 ? "" : "s"} available</p>
+        </button>
+
+        <button
+          onClick={() => setCurrentPage("insights")}
+          className="bg-(--card-bg) border border-(--border)/60 rounded-3xl p-5 text-left hover:bg-(--border)/40 transition-colors shadow-sm"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+              <BarChart3 size={18} />
+            </div>
+            <ArrowRight size={16} className="opacity-50" />
+          </div>
+          <p className="font-black">Open Insights</p>
+          <p className="text-xs opacity-60 mt-1">See streaks, efficiency, and trends</p>
+        </button>
       </div>
 
 

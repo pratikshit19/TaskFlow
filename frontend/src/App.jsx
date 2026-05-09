@@ -514,9 +514,9 @@ function AppContent() {
 
       {/* ================= MODALS ================= */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] transition-opacity duration-300">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start sm:items-center justify-center z-[100] transition-opacity duration-300 overflow-y-auto p-3 sm:p-6">
           <div
-            className="bg-transparent rounded-2xl w-[95%] max-w-md flex items-center justify-center z-[101]"
+            className="bg-transparent rounded-2xl w-full max-w-3xl flex items-center justify-center z-[101] my-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <CreateTodo

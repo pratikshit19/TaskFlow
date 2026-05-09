@@ -262,23 +262,47 @@ const useStore = create((set, get) => ({
     if (!token) return { success: false, message: "No token found" };
 
     try {
+      const currentProfile = get().userProfile;
+      const payload = { ...updates };
+
+      // Backward-compatible fallback: older backend required username on /profile updates.
+      if (payload.email !== undefined && payload.username === undefined) {
+        payload.username = currentProfile.username || "";
+      }
+
       const response = await fetch(`${API_BASE_URL}/profile`, {
         method: "PUT",
         headers: { 
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}` 
         },
-        body: JSON.stringify(updates),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
       if (response.ok) {
+        const profileUpdates = {};
+
         if (data.username) {
           localStorage.setItem("username", data.username);
+          profileUpdates.username = data.username;
+        }
+
+        if (data.email) {
+          profileUpdates.email = data.email;
+        }
+        // Some backend versions return only message/username on success.
+        // In that case, keep UI in sync using the submitted email.
+        if (!data.email && payload.email) {
+          profileUpdates.email = payload.email.trim().toLowerCase();
+        }
+
+        if (Object.keys(profileUpdates).length > 0) {
           set((state) => ({
-            userProfile: { ...state.userProfile, username: data.username }
+            userProfile: { ...state.userProfile, ...profileUpdates }
           }));
         }
+
         return { success: true, message: data.message };
       }
       return { success: false, message: data.message };

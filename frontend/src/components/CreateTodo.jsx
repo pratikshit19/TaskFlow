@@ -94,7 +94,7 @@ export function CreateTodo({ fetchTodos, closeModal, currentTodo }) {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto relative bg-(--card-bg) rounded-[2.5rem] p-6 sm:p-10 shadow-2xl shadow-(--gradient-start)/10 border border-(--border)/80 animate-in fade-in zoom-in-95 duration-500">
+    <div className="w-full max-w-2xl mx-auto relative bg-(--card-bg) rounded-[2.5rem] p-6 sm:p-10 shadow-2xl shadow-(--gradient-start)/10 border border-(--border)/80 animate-in fade-in zoom-in-95 duration-500 max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-3rem)] overflow-y-auto">
 
       <div className="absolute top-[-40px] right-[-40px] w-48 h-48 bg-(--gradient-end)/10 rounded-full blur-[60px] pointer-events-none"></div>
       <div className="absolute bottom-[-40px] left-[-40px] w-48 h-48 bg-(--gradient-start)/10 rounded-full blur-[60px] pointer-events-none"></div>
