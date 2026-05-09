@@ -1,4 +1,4 @@
-import { Edit, LogOut, Settings, Crown, Activity, ArrowRight, Check, Brain, Target, Sparkles, Users, Mail, ShieldCheck, Monitor, Moon, Sun, UsersRound, BarChart3 } from "lucide-react";
+import { Edit, LogOut, Settings, Crown, Activity, ArrowRight, Check, Brain, Target, Sparkles, Users, Mail, ShieldCheck, Monitor, Moon, Sun, UsersRound, BarChart3, Flame } from "lucide-react";
 import { useState, useRef, useMemo } from "react";
 import toast from "react-hot-toast";
 import API_BASE_URL from "../config";
